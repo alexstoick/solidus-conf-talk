@@ -152,10 +152,12 @@ that _unfortunately_, we have to write our own **product customisation**
 code.
 
 ---
+class: center, middle
 
 ### Sure, no problem
 
 ---
+class: center, middle
 
 ### But what do we actually write?
 
@@ -171,6 +173,7 @@ We knew we gonna do a hardback book and more languages; as well as other product
 but not a lot more than that._
 
 ---
+class: center, middle
 
 ### We really need to understand what these variants are
 
@@ -187,6 +190,7 @@ don't have a product option for the `cover_type` (softback vs hardback) - becaus
 we were not that forward thinking _ loads of regrets about this_.
 
 ---
+class: center, middle
 
 ### `lmn:softback:boy:en-GB`
 ### `lmn:softback:girl:en-GB`.
@@ -199,6 +203,7 @@ in the product option? ...
 Yep - that was problematic.
 
 ---
+class: center, middle
 
 ### `Spree::Customisation`
 
@@ -212,6 +217,7 @@ _ We also evaluated attaching the customisation to `InventoryUnit` - but
 those generated and regenerated at basically every step of the checkout stage._
 
 ---
+class: center, middle
 
 ### Reminder: We were on Spree 2.0
 
@@ -221,6 +227,7 @@ Yep. Things are a lot better in terms of how objects are generated and used toda
 compared to back then. (about 3 years ago!).
 
 ---
+class: center, middle
 
 picture
 
@@ -234,6 +241,7 @@ At this point, we had a place to store our customisation options, ie: name,
 dedication.
 
 ---
+class: center, middle
 
 ### Decorators
 
@@ -248,6 +256,7 @@ We need to create a new route, put together a controller and a view to add a new
 Lostmy.name book to the cart.
 
 ---
+class: center, middle
 
 ### Book in cart!
 
@@ -258,23 +267,151 @@ Spree, but we had **a lot**, and I mean **A LOT** of decorators.
 Now that we have something in the cart, surely, it should be easy to checkout,
 as we didn't change any of that logic? ... right? right?
 
+From the cart - we only had to tweak the generation of inventory units - as our
+items were unique to properties that were not determined by the variant. Lets
+not talk too much about this now - as it's a whole other list of surprises.
+
+Now enter the 2nd complication of our business: multiple stock locations.
+
 ---
+class: center, middle
 
 ### Stock (Inventory)
 
+???
+
+We operate an on-demand business, but we still have some _stock_ on the premises
+of our stock locations. When we launched with 1 book it was an easy problem to
+solve. But now we have over 90 variants, that have different availabilities
+throughout the world.
+
+As we are adding more products we have to start to **really** manange the
+inventory in solidus.
+
+Thankfully, here we were able to use the solution from Spree, which is the
+StockItems table and view.
+
+It looks like this now.
+
 ---
+class: center, middle
+
+## Picture of our stock item admin view
+
+???
+
+although we **still** don't know why we have negative counts. but this works,
+and we have no reason to change it!
+
+---
+class: center, middle
 
 ### Stock Locations
 
+???
+
+Again, we were able to use this concept from Solidus. We added some additional
+fields to be able to cope with our shop's specific requests such as: daily
+capacity, working days, holiday calendar, etc.
+
 ---
+class: center, middle
+
+### Shipping Methods
+
+???
+
+Here we had to tweak a lot. Originally, in _Spree 2.0_ the shipping method
+has no connection to the stock location; but only a connection to the zone
+(the destination).
+
+Initially we worked around this limitation; by modelling around this limitation.
+
+Then we had to add some complications based on the contents of the package.
+
+Then we added another `stock location`, and things started breaking down. This
+is where, this series of commits started.
+
+---
+
+class: center, middle
+
+<img src="img/commits.png" width="1000px"> </img>
+
+???
+
+dark days.
+
+---
+
+class: center, middle
 
 ### Coordinator
 
 Builder,Priotizer, Estimator, Validator
 
 ---
+class: center, middle
+
+### OK - more decorations
+
+---
+class: center, middle
+
+### How do we prioritize?
+
+Better write some custom code now. It will definitely resist over time.
+
+???
+
+Of course - we now have 2 stock locations - which makes this logic very easy.
+If it's in the US, then use A; otherwise use B.
+
+Lets see some code, _I_ wrote, about 3 years ago.
 
 
+---
+class: middle
+
+```
+def sort_packages
+  # If it's the US make sure to select the package from riverside
+  # If it's not the US make sure to select the package from charlesworth
+  if order.ship_address.country.iso == "US"
+    stock_location_id = Spree::StockLocation.friendly.find("riverside").id
+    selected_package = packages.select { |p| p.stock_location.id == stock_location_id }
+    selected_package = selected_package.first
+    packages.unshift(selected_package)
+  else
+    ...
+  end
+end
+```
+
+---
+class: middle
+
+```
+adjuster = @adjuster_class.new(line_item.variant, line_item.quantity, :on_hand)
+
+# Make sure we pass the line item so that we can validate that it's the right
+# item we are picking!
+# Important for us since the customisation is not reflected in the variant
+visit_packages(adjuster,line_item)
+
+adjuster.status = :backordered
+visit_packages(adjuster,line_item)
+
+```
+
+---
+
+class: center, middle
+
+### Wait - we don't want split shipments
+
+
+---
 
 
 
