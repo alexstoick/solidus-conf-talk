@@ -51,14 +51,25 @@ class: center, middle
 ???
 
 I have worked with (Spree) ... Solidus for the same amount of time as I have been at Lostmy.name.
-We have quite a specific set of requirements and we are constantly pushing
+
+We have some unique requirements and we are constantly pushing
 Solidus to do more things!
 
 ---
 
-class: center
+class: center, middle
 
 <img src="img/products.jpg" width="100%"> </img>
+
+???
+
+By now, I'm sure you guys are aware what we do at Lostmy.name: these beautiful
+print-on-demand personalised products. To help us sell these products our website
+is powered by Solidus on the backend and ReactJS frontend.
+
+But let me take you guys baaaack to the start... 3 years ago; when we didn't know
+**most** of the things that we know today, mainly we didn't know that there is
+a "Spree-way" of doing things!
 
 
 ---
@@ -70,13 +81,17 @@ class: center, middle
 ???
 
 When we started we were 3 engineers and neither of us had very much e-commerce
-experience, so being able to have a base project to work from made a big difference.
-
+experience, so having a base project (with _some_ guildelines) made a massive
+difference.
+Nonetheless, we still felt like everyday we were creating _bespoke algorithms_.
 _The tshirts are a running joke of when our CEO was on TV and was asked how our
 books are created and said that: "we have a bespoke algorithm"._
 
-We had a previous website, that had very basic concepts of ecommerce: `Order`
-`Book` `Payment`. Then we moved to solidus.
+So, what was our website before solidus?
+
+It that had very basic concepts of ecommerce: `Order` `Book` `Payment`.
+
+Then we moved to solidus.
 
 Basically looked like this. Switch slides now.
 
@@ -101,10 +116,13 @@ class: center, middle
 
 Going from that... to this ........ it was quite a change.
 
+Now... I'm not joking. Solidus does really feel like this ...
+
+## See the ERD
+
 ---
 
 class: center
-# Enter Solidus
 
 <img src="img/erd.png" height="500px"> </img>
 
@@ -156,6 +174,10 @@ class: center, middle
 
 ### Sure, no problem
 
+???
+
+We sort of know what we have to do... or so we thought.
+
 ---
 class: center, middle
 
@@ -176,6 +198,16 @@ but not a lot more than that._
 class: center, middle
 
 ### We really need to understand what these variants are
+
+---
+
+class: center, middle
+
+### Picture of boxes showing
+
+Product --- Product Options
+
+Variant == Product + Product Values for Options
 
 ???
 
@@ -323,14 +355,16 @@ class: center, middle
 
 Here we had to tweak a lot. Originally, in _Spree 2.0_ the shipping method
 has no connection to the stock location; but only a connection to the zone
-(the destination).
+(the destination); meaning if you had more methods shipping to the same zone,
+it was impossible to distinguish them.
 
 Initially we worked around this limitation; by modelling around this limitation.
 
-Then we had to add some complications based on the contents of the package.
+But then business requirements changed, and we had to start creating some magic.
+Soon afterwards, we onboarded a new `stock location` and our house of cards
+collapsed; and again we had to write _bespoke algorithms_.
 
-Then we added another `stock location`, and things started breaking down. This
-is where, this series of commits started.
+It all started with commits like this.
 
 ---
 
@@ -346,29 +380,54 @@ dark days.
 
 class: center, middle
 
-### Coordinator
-
-Builder,Priotizer, Estimator, Validator
-
----
-class: center, middle
-
-### OK - more decorations
-
----
-class: center, middle
-
-### How do we prioritize?
-
-Better write some custom code now. It will definitely resist over time.
+### Data model ✅
 
 ???
+
+At this point, we thought we had a good data model, and we were now looking
+how we could actually `order` a book and work it through all of the stages
+of the state machine until `shipped`.
+
+Lets start at the basics - creating a shipment.
+
+---
+
+class: center, middle
+
+### Coordinator
+
+Builder, Priotizer, Estimator, Validator
+
+???
+
+These are the default components that ship with `Spree`. There are some changes
+in how these components behave that have happened since we started using Spree
+and the current version of Solidus, but mainly their responsabilities stayed
+the same.
+
+**Builder** - builds **all** possible packages (one for each stock location with
+the available stock items).
+**Prioritizer** - (the only place where you can customise) - sorts the packages based
+on a rule (customisable), then balances(adjusts) the packages - so you are left only with the
+minimal subset of packages that added together == order contents
+**Estimator** - creates the shipping rates for the packages
+**Validator** - validates that the items in the packages == the order contents (qty checks)
+
+---
+class: center, middle
+
+### OK - lets _decorate_
+
+???
+
+Initially we had to decorate the method in the prioritizer doing the sorting of packages.
+
+Better write some custom code now. It will definitely resist over time.
 
 Of course - we now have 2 stock locations - which makes this logic very easy.
 If it's in the US, then use A; otherwise use B.
 
 Lets see some code, _I_ wrote, about 3 years ago.
-
 
 ---
 class: middle
@@ -389,6 +448,7 @@ end
 ```
 
 ---
+
 class: middle
 
 ```
@@ -404,12 +464,23 @@ visit_packages(adjuster,line_item)
 
 ```
 
+???
+
+We also had to decorate the `adjusting` of packages, since our items attributes
+cannot be determined just from the variant, and we needed to pass the `line_item`
+(which then holds the `customisation` connection) to validate what we are adjusting.
+
+
+### Important to say that this has been upstreamed; as well as some other optimisations
+around the `Estimator`
+
 ---
 
 class: center, middle
 
-### Wait - we don't want split shipments
+### Wait - more business requirements
 
+???
 
 ---
 
@@ -442,7 +513,7 @@ end
 # Introduction
 
     </textarea>
-    <script src="https://remarkjs.com/downloads/remark-latest.min.js" type="text/javascript">
+    <script src="remark-latest.min.js" type="text/javascript">
     </script>
     <script type="text/javascript">
       var slideshow = remark.create({
