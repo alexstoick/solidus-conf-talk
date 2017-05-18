@@ -444,8 +444,9 @@ class: center, middle
 
 At this point, we thought we had a good data model for this shipping side of things.
 
-Now back to the cart!! We were now looking to actually order a `book`. Sounds
-easy right?
+Now back to the cart!!
+
+We were now looking to actually order a `book`. Sounds easy right?
 
 ---
 
@@ -474,6 +475,8 @@ class: center, middle
 
 ???
 
+Again - here we tried to ue the default objects and flow from Solidus.
+
 These are the default components that ship with `Spree`. There are some changes
 in how these components behave that have happened since we started using Spree
 and the current version of Solidus, but mainly their responsabilities stayed
@@ -498,6 +501,18 @@ class: center, middle
 ???
 
 Initially we had to decorate the method in the prioritizer doing the sorting of packages.
+
+---
+class: middle
+
+```
+def sort_packages
+  # order packages by preferred stock_locations
+end
+```
+
+???
+And with code like this in the Solidus repo, what else could've we done?
 
 Better write some custom code now. It will definitely resist over time.
 
@@ -524,6 +539,11 @@ def sort_packages
 end
 ```
 
+???
+
+After decorting this method we looked further down the flow, and realised we have
+to also _decorate_ (read: _rewrite_) the adjustment phase of the `Prioritzer`.
+
 ---
 
 class: middle
@@ -548,16 +568,13 @@ cannot be determined just from the variant, and we needed to pass the `line_item
 (which then holds the `customisation` connection) to validate what we are adjusting.
 
 
-### Important to say that this has been upstreamed; as well as some other optimisations
-around the `Estimator`
+### Important to say that this has been upstreamed; as well as some other optimisations around the `Estimator`
 
 ---
 
 class: center, middle
 
-### We decorated.
-
-### Can we purchase a book now?
+### We decorated. A LOT.
 
 ???
 
@@ -585,8 +602,92 @@ However, we worked **hard** to get to this point, but basically:
 
 
 ---
+class: center, middle
+
+### Can we purchase a book now?
+
+???
+
+After we sorted out the generation of shipments - we were onto the payment stage.
+Thankfully, things did **just** work here, and we had a complete order.
+
+God, it's been a long journey - with a lot of learning on our side, both about
+e-commerce in general, and about Spree/Solidus in particular.
+
+---
+class: center, middle
+
+### Lesson 1: Personalised Products & Solidus
+
+???
+
+It's not that hard as it sounds! As soon as you undertand the underlying model
+and moving parts of Solidus, you can attach a model the `LineItem` and from there
+
+...
+
+the SKY is the limit
+
+## HOWEVER
+
+1. We still have some hacks around our codebase,
+for example: handling giftwrap & the pricing of it.
+
+2. State machines are very convoluted. We added our own, and now we have to sync
+the order, shipment, customisation (our). NOT FUN.
+
+---
+class: center, middle
+
+### Lesson 2: Complex shipping rules
+
+???
+
+Combine the on-demand & complex shipping rules - this turned out to be `hard`.
+
+At this point we are also looking at how we can make some more improvements in
+the `Coordinator` flow to allow us to adapt to changing business rules.
+
+---
+class: center, middle
+
+### Lesson 3: Engage with the community
+
+???
+
+There are **A LOT** of smart people out there; and **A LOT** of them use
+Solidus.
+
+We reached out to the Spree core, and now Solidus Core teams often - and get
+people's opinions on new challenges, as well as consult with them on how we
+are thinking of solving them.
+
+A few times, we asked Clarke:
+
+`Hey how would you do this?`
+
+`Well, it's great that you ask. We've done this previously ......`
+
+Being able to have these interactions has been very helpful for the direction
+that we went with our decorations, as well as getting rid of them.
+
+Jordan - who we're super happy to have working at LMN, we know what are the longer
+term plans for Solidus.
+
+---
+class: center, middle
+
+### Lesson 4: Keep moving forward!
+
+???
+
+Business requirements change often, and we have to review our code and previous
+_decorations_ (or hacks, as I call them).
+
+---
 
 ### Twitter
+
 ### Github
 
 
