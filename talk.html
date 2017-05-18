@@ -2,7 +2,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>My Awesome Presentation</title>
+    <title>SolidusConf</title>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
     <style type="text/css">
       @import url(https://fonts.googleapis.com/css?family=Yanone+Kaffeesatz);
@@ -186,7 +186,9 @@ class: center, middle
 ???
 
 Ok - it's a new model! Great!!
+
 But where does it fit in the puzzle?
+
 What values will it contain?
 
 _Important to specify that at this point we only had an `enGB` softback book
@@ -194,32 +196,56 @@ available for boy/girl.
 We knew we gonna do a hardback book and more languages; as well as other products
 but not a lot more than that._
 
+We still had a lot of questions and **doubts** about how to really model this new
+thing.
+
 ---
 class: center, middle
 
 ### We really need to understand what these variants are
 
+???
+
+How many of you are familiar with the product, product options, option
+values; and variants?
+
+Well, worry not, I will try to clarify it.
+
 ---
 
 class: center, middle
 
-### Picture of boxes showing
+### Product & Product Option Types
 
-Product --- Product Options
+<img src="img/product-option-types.png"> </img>
 
-Variant == Product + Product Values for Options
+---
+
+class: center, middle
+
+### Variant & Option Values
+
+<img src="img/variant.png"> </img>
+
+---
+
+class: center, middle
+
+### Our use-case
+
+<img src="img/lmn-prod-types.png"> </img>
 
 ???
 
 So we create a new product **Lostmy.name book**.
 
+The product has the product options of `gender` and `locale`. At this point we
+don't have a product option for the `cover_type` (softback vs hardback) - because
+we were not that forward thinking _ loads of regrets about this_.
+
 Now what should the variants be?
 
 #### Anyone want to guess?
-
-The product will have the product options of `gender` and `locale`. At this we
-don't have a product option for the `cover_type` (softback vs hardback) - because
-we were not that forward thinking _ loads of regrets about this_.
 
 ---
 class: center, middle
@@ -239,6 +265,8 @@ class: center, middle
 
 ### `Spree::Customisation`
 
+<img src="img/li-cust.png"> </img>
+
 ???
 
 So we have variants, and line items. Line items felt like the right place for
@@ -255,19 +283,12 @@ class: center, middle
 
 ???
 
-Yep. Things are a lot better in terms of how objects are generated and used today
-compared to back then. (about 3 years ago!).
+Yep.
 
----
-class: center, middle
-
-picture
-
-
-LineItem <--> Variant
-|--> Customisation
-
-???
+Things are a lot better in terms of how objects are generated and used today
+compared to back then. (about 3 years ago!); and things are improving everyday!!
+which means that any newcomer won't have to struggle with some of the things
+we had to.
 
 At this point, we had a place to store our customisation options, ie: name,
 dedication.
@@ -275,7 +296,9 @@ dedication.
 ---
 class: center, middle
 
-### Decorators
+### Model - ✅
+### Controller - ✅
+### Other decorators - 🎄
 
 ???
 
@@ -303,7 +326,8 @@ From the cart - we only had to tweak the generation of inventory units - as our
 items were unique to properties that were not determined by the variant. Lets
 not talk too much about this now - as it's a whole other list of surprises.
 
-Now enter the 2nd complication of our business: multiple stock locations.
+Now enter the 2nd complication of our business: multiple stock locations (global shipping)
+as well as `on demand` products.
 
 ---
 class: center, middle
@@ -328,12 +352,16 @@ It looks like this now.
 ---
 class: center, middle
 
-## Picture of our stock item admin view
+<img src="img/admin-stock.png"> </img>
 
 ???
 
-although we **still** don't know why we have negative counts. but this works,
-and we have no reason to change it!
+although we **still** don't know why we have negative counts; we have a few ideas
+but we are not 100%. can't say we spent too much time trying to fix/or change it
+as this is something that _just works_.
+
+Imagine that we have 90 variants(spread across 5?? 6?? products) x 10 stock locations = ~900 entries
+in the StockItems table.
 
 ---
 class: center, middle
@@ -358,9 +386,25 @@ has no connection to the stock location; but only a connection to the zone
 (the destination); meaning if you had more methods shipping to the same zone,
 it was impossible to distinguish them.
 
+---
+
+class:center, middle
+
+### Shipping Methods, Zones
+
+<img src="img/sm-zone.png"> </img>
+
+???
+
+Meaning it looked like this. For a business like LMN, who was shipping from the
+UK to the US, and also from US to US; this was creating problems.
+
+It's important to say here that we also added some custom fields to the `ShippingMethodZone` table
+to hold information such as shipping duration for that shipping method to that zone.
+
 Initially we worked around this limitation; by modelling around this limitation.
 
-But then business requirements changed, and we had to start creating some magic.
+But as the business requirements changed, and we had to start creating some magic.
 Soon afterwards, we onboarded a new `stock location` and our house of cards
 collapsed; and again we had to write _bespoke algorithms_.
 
@@ -380,13 +424,40 @@ dark days.
 
 class: center, middle
 
+<img src="img/sl-sm-zone.png"> </img>
+
+???
+
+Then we introduced the relationship between stock-location and shipping method,
+this enabling us to have a full chain of SOURCE----DESTINATION modeled.
+
+This change is upstreamed into Solidus, but I'm not sure how many people are
+aware of it - and how many use it; but it was something that definitely help us.
+
+---
+
+class: center, middle
+
 ### Data model ✅
 
 ???
 
-At this point, we thought we had a good data model, and we were now looking
-how we could actually `order` a book and work it through all of the stages
-of the state machine until `shipped`.
+At this point, we thought we had a good data model for this shipping side of things.
+
+Now back to the cart!! We were now looking to actually order a `book`. Sounds
+easy right?
+
+---
+
+class: center, middle
+
+<img src="img/book-in-box.jpg" width="100%"> </img>
+
+???
+
+It should be just putting books in a box, then adding a shipping label.
+
+O'boy.
 
 Lets start at the basics - creating a shipment.
 
@@ -396,7 +467,10 @@ class: center, middle
 
 ### Coordinator
 
-Builder, Priotizer, Estimator, Validator
+#### Builder
+#### Priotizer
+#### Estimator
+#### Validator
 
 ???
 
@@ -407,10 +481,13 @@ the same.
 
 **Builder** - builds **all** possible packages (one for each stock location with
 the available stock items).
+
 **Prioritizer** - (the only place where you can customise) - sorts the packages based
 on a rule (customisable), then balances(adjusts) the packages - so you are left only with the
 minimal subset of packages that added together == order contents
+
 **Estimator** - creates the shipping rates for the packages
+
 **Validator** - validates that the items in the packages == the order contents (qty checks)
 
 ---
@@ -478,39 +555,42 @@ around the `Estimator`
 
 class: center, middle
 
-### Wait - more business requirements
+### We decorated.
+
+### Can we purchase a book now?
 
 ???
 
+At this point we've been hacking at the internals of Spree for about 1 month,
+trying to decorate, tweak decorations... and basically we got to a point where
+we didn't know what code was ours, and what code was coming from Spree.
+
+However, we worked **hard** to get to this point, but basically:
+
+normal spree installation - our spree installation.
+
 ---
 
+class: center, middle
+
+<img src="img/normal.jpg" width="350x"> </img>
+<img src="img/decorated.jpg" width="350px"/>
+
+???
+
+However, we worked **hard** to get to this point, but basically:
+
+## normal spree installation - our spree installation.
 
 
 
-
-
-
-
-
-
-
-```
-
-files.each do |file|
-  puts file
-end
-```
-
-# Agenda
-
-1. Introduction
-2. Deep-dive
-3. ...
-
-[NOTE]: Note that you need remark.js alongside this html file, but no internet connection.
 ---
 
-# Introduction
+### Twitter
+### Github
+
+
+---
 
     </textarea>
     <script src="remark-latest.min.js" type="text/javascript">
